@@ -126,9 +126,13 @@ Every architectural decision, RTL module, and emulator component **must** strict
   - [x] 2D Systolic Array Tensor Engine ($16 \times 16$ tiles: FP8, BF16, INT8 $\to$ FP32)
   - [x] SIMD Vector Engine (`VGELU`, `VRMSNORM`, `VSOFTMAX`, `VADD`, `VMUL`)
   - [x] Cycle counter, MAC throughput metrics, and execution reporting
-- [ ] **Phase 3: Assembler & Toolchain (`tools/`)**
-  - [ ] Lightweight assembler compiling `.s` source files to NeuroFlow 32-bit binary code
-  - [ ] Disassembler and machine code inspector
+- [x] **Phase 3: Assembler & Toolchain (`assembler/`)**
+  - [x] Two-pass assembler (`neuroflow-as`) compiling `.s` files into 32-bit machine code (`.bin`)
+  - [x] Verilog hex memory file generator (`--hex .hex` for `$readmemh`)
+  - [x] Direct binary execution support in the emulator (`cargo run -p emulator -- <binary.bin>`)
+- [ ] **Phase 4: Neural Network Benchmark**
+  - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
+  - [ ] Validation against PyTorch reference outputs
 - [ ] **Phase 4: Neural Network Benchmark**
   - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
   - [ ] Validation against PyTorch reference outputs
@@ -138,7 +142,23 @@ Every architectural decision, RTL module, and emulator component **must** strict
 
 ---
 
-## 7. Repository Layout
+## 7. Quick Start: Assembling & Running Programs
+
+### 1. Compile an Assembly Source File
+```bash
+# Assemble human-readable assembly (.s) into a 32-bit binary (.bin) and Verilog hex (.hex)
+cargo run -p assembler -- asm/gemm_layer.s -o asm/gemm_layer.bin --hex asm/gemm_layer.hex
+```
+
+### 2. Execute on the DAE-NPU Emulator
+```bash
+# Execute the compiled binary on the cycle-accurate emulator
+cargo run -p emulator -- asm/gemm_layer.bin
+```
+
+---
+
+## 8. Repository Layout
 
 ```text
 neuroflow/

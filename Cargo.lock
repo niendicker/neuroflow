@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
+name = "assembler"
+version = "0.1.0"
+dependencies = [
+ "emulator",
+]
+
+[[package]]
 name = "emulator"
 version = "0.1.0"

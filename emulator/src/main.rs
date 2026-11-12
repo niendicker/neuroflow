@@ -1,5 +1,8 @@
+use std::env;
+use std::fs;
+use std::process;
+
 use emulator::cpu::Cpu;
-use emulator::isa::*;
 use emulator::types::Bf16;
 
 fn main() {
@@ -7,15 +10,15 @@ fn main() {
     println!("     NeuroFlow DAE-NPU Cycle-Deterministic Emulator v0.1    ");
     println!("============================================================");
 
+    let args: Vec<String> = env::args().collect();
     let mut cpu = Cpu::new();
 
-    // Setup input matrices A and B in Scratchpad TCM (Bank A)
-    // Matrix A: 16x16 with values = 1.0 (BF16)
-    // Matrix B: 16x16 with values = 0.5 (BF16)
-    // Expected Result: C = A x B = 16 * (1.0 * 0.5) = 8.0 per element
+    // Pre-initialize Scratchpad Memory with a test pattern for GEMM
+    // Matrix A: 16x16 with values = 1.0 (BF16) at 0x0000
+    // Matrix B: 16x16 with values = 0.5 (BF16) at 0x1000
     let base_a = 0x0000;
     let base_b = 0x1000;
-    let stride = 16 * 2; // 16 elements * 2 bytes = 32 bytes
+    let stride = 16 * 2; // 32 bytes
 
     let bf_one = Bf16::from_f32(1.0).0.to_le_bytes();
     let bf_half = Bf16::from_f32(0.5).0.to_le_bytes();
@@ -46,41 +49,39 @@ fn main() {
     cpu.tile_descriptors[1].buffer_id = 0;
     cpu.tile_descriptors[1].dtype = 2; // BF16
 
-    // Build benchmark program:
-    // 1. TZERO acc0                       (Clear accumulator 0)
-    // 2. TMATMUL acc0, td0, td1, PREC_BF16 (16x16 GEMM in Systolic Array)
-    // 3. TACC.ROW v0, acc0, row 0          (Transfer row 0 to 512-bit Vector Reg v0)
-    // 4. VGELU v1, v0                     (Compute GELU activation on vector v0)
-    // 5. HALT
-    let tzero_inst = (OP_TENSOR as u32) | ((FUNCT3_TZERO as u32) << 12) | (0 << 7); // acc0
-    let tmatmul_inst = (OP_TENSOR as u32)
-        | (0 << 7)                              // acc0
-        | ((FUNCT3_TMATMUL as u32) << 12)
-        | (0 << 15)                             // td_a = 0
-        | (1 << 20)                             // td_b = 1
-        | ((2 & 0x07) << 25);                   // dtype = BF16 (2)
+    let program: Vec<u32>;
 
-    let tacc_row_inst = (OP_TENSOR as u32)
-        | (0 << 7)                              // vd = v0
-        | ((FUNCT3_TACC_ROW as u32) << 12)
-        | (0 << 15)                             // row_idx = 0
-        | (0 << 20);                            // acc_idx = 0
+    if args.len() > 1 {
+        let bin_path = &args[1];
+        println!("Loading binary: {}", bin_path);
+        let bytes = fs::read(bin_path).unwrap_or_else(|err| {
+            eprintln!("Failed to read binary file '{}': {}", bin_path, err);
+            process::exit(1);
+        });
 
-    let vgelu_inst = (OP_VECTOR as u32)
-        | (1 << 7)                              // vd = v1
-        | ((FUNCT3_VGELU as u32) << 12)
-        | (0 << 15);                            // vs = v0
+        if bytes.len() % 4 != 0 {
+            eprintln!("Error: Binary size ({} bytes) is not a multiple of 4 bytes", bytes.len());
+            process::exit(1);
+        }
 
-    let halt_inst = (OP_SYSTEM as u32) | (1 << 25); // HALT
+        let mut words = Vec::with_capacity(bytes.len() / 4);
+        for chunk in bytes.chunks_exact(4) {
+            words.push(u32::from_le_bytes(chunk.try_into().unwrap()));
+        }
+        program = words;
+    } else {
+        println!("No binary provided. Running built-in GEMM + Activation validation program.");
+        // Built-in validation program
+        program = vec![
+            0x0000102b, // tzero acc0
+            0x0410002b, // tmatmul acc0, td0, td1, bf16
+            0x0000202b, // tacc.row v0, acc0, 0
+            0x000000cb, // vgelu v1, v0
+            0x02000073, // halt
+        ];
+    }
 
-    let program = vec![
-        tzero_inst,
-        tmatmul_inst,
-        tacc_row_inst,
-        vgelu_inst,
-        halt_inst,
-    ];
-
+    println!("Executing {} instructions...", program.len());
     cpu.load_program(&program);
     cpu.run(100_000).expect("Execution failed");
 
@@ -93,12 +94,12 @@ fn main() {
 
     // Verify Output
     let acc_row_0 = cpu.systolic.accumulators[0].fp32_data[0];
-    println!("\nAccumulator 0, Row 0 (Expected 8.0):");
+    println!("\nAccumulator 0, Row 0:");
     println!("{:?}", &acc_row_0[0..4]);
 
     let v1_result = cpu.vector.registers[1].read_fp32();
-    println!("\nVector Register v1 (GELU of 8.0, Expected ~8.0):");
+    println!("\nVector Register v1:");
     println!("{:?}", &v1_result[0..4]);
 
-    println!("\n[PASSED] DAE-NPU Systolic + Vector Pipeline validated successfully!");
+    println!("\n[PASSED] DAE-NPU execution finished successfully!");
 }
