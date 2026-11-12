@@ -135,8 +135,11 @@ Every architectural decision, RTL module, and emulator component **must** strict
   - [x] Bit-for-bit numerical validation against NumPy golden reference model
   - [x] Benchmark metrics: 24,576 Systolic MACs in 433 cycles (56.76 MACs/cycle)
 - [ ] **Phase 5: Hardware Description (RTL in `rtl/`)**
-  - [ ] SystemVerilog / Chisel implementation of the DAE-NPU
-  - [ ] Verilator cycle-accurate simulation and FPGA deployment
+  - [x] Synthesizable SystemVerilog Processing Element (`pe.sv`)
+  - [x] 2D Systolic Array Mesh ($16 \times 16$ PEs with 512-bit readout bus in `systolic_array.sv`)
+  - [x] 512-bit SIMD Vector Engine (`vector_unit.sv`)
+  - [x] Verilator C++ testbench harness (`tb/tb_pe.cpp`) and Makefile
+  - [ ] Full core integration and Verilator simulation execution
 - [ ] **Phase 4: Neural Network Benchmark**
   - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
   - [ ] Validation against PyTorch reference outputs
@@ -158,6 +161,16 @@ cargo run -p assembler -- asm/gemm_layer.s -o asm/gemm_layer.bin --hex asm/gemm_
 ```bash
 # Execute the compiled binary on the cycle-accurate emulator
 cargo run -p emulator -- asm/gemm_layer.bin
+```
+
+### 3. Run Hardware RTL Simulation (SystemVerilog + Verilator)
+```bash
+# Install Verilator (if not already installed)
+sudo pacman -S verilator gtkwave
+
+# Run RTL simulation of the Systolic Processing Element
+cd rtl
+make sim_pe
 ```
 
 ---
