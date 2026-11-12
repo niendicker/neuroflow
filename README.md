@@ -119,13 +119,13 @@ Every architectural decision, RTL module, and emulator component **must** strict
   - [x] High-level architectural overview & DAE paradigm ([docs/architecture.md](docs/architecture.md))
   - [x] Formal 32-bit ISA definition & register mapping ([docs/isa_spec.md](docs/isa_spec.md))
   - [x] Core architectural tenets & rationale table
-- [ ] **Phase 2: Cycle-Accurate Software Emulator (`emulator/`)**
-  - [ ] Rust-based core engine, machine state, and memory subsystem (Scratchpad TCM + DRAM)
-  - [ ] 32-bit instruction fetcher and decoder
-  - [ ] Asynchronous Tensor DMA Streamer (TDS) with ping-pong double buffering
-  - [ ] 2D Systolic Array Tensor Engine ($16 \times 16$ tiles: FP8, BF16, INT8 $\to$ FP32)
-  - [ ] SIMD Vector Engine (`VGELU`, `VRMSNORM`, `VSOFTMAX`, `VADD`)
-  - [ ] Cycle counter, energy estimation, and execution reporting
+- [x] **Phase 2: Cycle-Accurate Software Emulator (`emulator/`)**
+  - [x] Rust-based core engine, machine state, and memory subsystem (Scratchpad TCM + DRAM)
+  - [x] 32-bit instruction fetcher and decoder
+  - [x] Asynchronous Tensor DMA Streamer (TDS) with ping-pong double buffering
+  - [x] 2D Systolic Array Tensor Engine ($16 \times 16$ tiles: FP8, BF16, INT8 $\to$ FP32)
+  - [x] SIMD Vector Engine (`VGELU`, `VRMSNORM`, `VSOFTMAX`, `VADD`, `VMUL`)
+  - [x] Cycle counter, MAC throughput metrics, and execution reporting
 - [ ] **Phase 3: Assembler & Toolchain (`tools/`)**
   - [ ] Lightweight assembler compiling `.s` source files to NeuroFlow 32-bit binary code
   - [ ] Disassembler and machine code inspector
