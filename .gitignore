@@ -1,4 +1,6 @@
 target/
+obj_dir/
+*.vcd
 **/*.rs.bk
 *.swp
 .DS_Store
