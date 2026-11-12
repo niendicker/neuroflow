@@ -1,15 +1,18 @@
-# NeuroFlow: Decoupled Dataflow & Tensor Architecture
+# NeuroFlow: A Decoupled Access-Execute Neural Processing Unit (DAE-NPU)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Status: Concept & Specification](https://img.shields.io/badge/Status-Specification%20%26%20Design-orange.svg)]()
+[![Architecture: DAE-NPU](https://img.shields.io/badge/Architecture-DAE--NPU-blueviolet.svg)]()
+[![Status: Specification & Design](https://img.shields.io/badge/Status-Specification%20%26%20Design-orange.svg)]()
 
 **NeuroFlow** is an open-source, domain-specific processor architecture designed from the ground up for modern deep learning workloads (Transformers, LLMs, and ConvNets).
 
-Instead of shoehorning matrix operations into general-purpose scalar/superscalar cores, NeuroFlow implements a **Decoupled Dataflow and Systolic Tensor Engine** paired with software-managed scratchpad memory, eliminating cache misses, branch prediction penalties, and von Neumann data movement overheads.
+NeuroFlow is formally classified as a **Decoupled Access-Execute Neural Processing Unit (DAE-NPU)**. By strictly decoupling memory streaming (Access) from matrix/vector computation (Execute) and coordinating them via an ultra-lean 32-bit scalar control core, NeuroFlow eliminates the von Neumann bottleneck, removes unpredictable cache misses, and maximizes compute density per watt.
+
+> For a complete architectural breakdown and theoretical foundation, read [docs/architecture.md](docs/architecture.md).
 
 ---
 
-## 1. Why a New Architecture for AI?
+## 1. Why a DAE-NPU for AI?
 
 Modern CPUs (x86, ARM, standard RISC-V) were architected for general-purpose computing where control flow is unpredictable and data access patterns are stochastic. When applied to AI workloads, they suffer from fundamental inefficiencies:
 
@@ -19,18 +22,58 @@ Modern CPUs (x86, ARM, standard RISC-V) were architected for general-purpose com
 
 ---
 
-## 2. Architectural Blueprint
+## 2. Industry Parallels: Synthesis of the State of the Art
 
-NeuroFlow decouples control, memory transfers, matrix arithmetic, and non-linear activations into dedicated, cooperating hardware engines:
+Every major AI accelerator today excels at one or two dimensions of the AI problem, but carries severe legacy trade-offs:
+
+```
++------------------------------------------------------------------------------------+
+|                               THE MODERN AI ACCELERATOR MATRIX                      |
++-------------------+--------------------------------+-------------------------------+
+| Architecture      | What It Got Right              | The Historical Baggage        |
++-------------------+--------------------------------+-------------------------------+
+| NVIDIA Blackwell  | Asynchronous Tensor DMA (TMA)  | Trapped inside a legacy SIMT  |
+| / Hopper (H100)   | and high-density Tensor Cores  | GPU; warp schedulers, dynamic |
+|                   |                                | bank conflicts, huge L2 cache.|
++-------------------+--------------------------------+-------------------------------+
+| Google TPU        | 2D Systolic Matrix Unit +      | Massive VLIW bundles (100s of |
+| (v2 - v5p)        | Scratchpad + Vector Unit       | bits); closed coprocessor     |
+|                   |                                | slave to a host x86 CPU.      |
++-------------------+--------------------------------+-------------------------------+
+| Tenstorrent       | Decentralized core with local  | Micro-core sprawl: 5 separate |
+| Tensix Core       | SRAM tiles and decoupled math  | RISC-V CPUs inside *each* core|
+| (Jim Keller)      |                                | creating firmware complexity. |
++-------------------+--------------------------------+-------------------------------+
+| Groq LPU          | Total determinism; zero caches | Destroyed the concept of an   |
+| (TSP)             | and zero branch predictors     | ISA; spatial routing makes it |
+|                   |                                | impossible to program by hand.|
++-------------------+--------------------------------+-------------------------------+
+| NeuroFlow         | DAE: Pure Tensor DMA Streamer  | None. Built clean-slate as an |
+| (This Project)    | + 2D Systolic GEMM + Scratchpad| open 32-bit DAE-NPU with      |
+|                   | TCM + Lean 32-bit Scalar ISA   | hardware loops.               |
++-------------------+--------------------------------+-------------------------------+
+```
+
+NeuroFlow synthesizes the best of these innovations into a clean, open design:
+* **The Matrix Core of Google TPU:** 2D Systolic Array performing massive MAC operations directly in hardware.
+* **The Streaming Engine of NVIDIA TMA:** Asynchronous, multidimensional tensor DMA streaming directly to scratchpad memory.
+* **The Predictability of Groq LPU:** Tightly-Coupled Scratchpad Memory (TCM) with zero cache misses.
+* **The Simplicity of Classic RISC:** A single, clean 32-bit ISA with zero-overhead hardware loops.
+
+---
+
+## 3. Architectural Blueprint
+
+NeuroFlow divides execution into four cooperating, decoupled domains:
 
 ```mermaid
 flowchart TD
-    EXT["External Memory (Host / DRAM)"] <--> TDS["Tensor DMA Streamer<br/>(Asynchronous 2D/3D Transfers)"]
+    EXT["External Memory (Host / DRAM)"] <--> TDS["Tensor DMA Streamer (TDS)<br/>(Asynchronous 2D/3D Transfers)"]
     TDS <--> SRAM["Tightly-Coupled Scratchpad SRAM (TCM)<br/>(Double-Buffered Ping-Pong Buffers)"]
     
-    SU["Scalar Control Unit<br/>(Hardware Loops, Pointer Math, Sync)"] --> TDS
-    SU --> TE["Tensor Engine<br/>(2D Systolic Array: FP8, BF16, INT8)"]
-    SU --> VU["Vector Activation Unit<br/>(SIMD: GELU, RMSNorm, Softmax)"]
+    SU["Scalar Control Unit (SU)<br/>(Hardware Loops, Pointer Math, Sync)"] --> TDS
+    SU --> TE["Tensor Engine (TE)<br/>(2D Systolic Array: FP8, BF16, INT8)"]
+    SU --> VU["Vector Activation Unit (VU)<br/>(SIMD: GELU, RMSNorm, Softmax)"]
     
     SRAM <--> TE
     SRAM <--> VU
@@ -45,28 +88,14 @@ flowchart TD
 
 ---
 
-## 3. Industry Parallels & State of the Art
+## 4. Traditional CPU vs. NeuroFlow DAE-NPU
 
-NeuroFlow's design principles are grounded in the most successful specialized AI silicon in production today:
-
-| System / Pioneer | Key Parallel to NeuroFlow |
-| :--- | :--- |
-| **Google TPU (v1 - v5p)** | Pioneered 2D Systolic Matrix Units fed directly by high-bandwidth on-chip scratchpad SRAM, offloading activation functions to a paired vector unit. |
-| **Tenstorrent Tensix (Jim Keller)** | Decouples data movement from mathematical execution. Replaces unpredictable caches with explicit local SRAM tiles managed by lightweight control processors. |
-| **Groq LPU (TSP)** | Proved the superiority of radical determinism: zero branch predictors, zero caches, and compile-time scheduling of every data movement. |
-| **NVIDIA TMA (Hopper H100 / Blackwell B200)** | Introduced the *Tensor Memory Accelerator* (TMA) to asynchronously stream multi-dimensional tensor tiles directly from global memory to shared memory without core intervention. |
-| **Tesla Dojo (D1 Core)** | Combines a lean scalar controller with a high-density 2D SIMD/matrix array and localized high-bandwidth SRAM per processing node. |
-
----
-
-## 4. Traditional CPU vs. NeuroFlow
-
-| Feature | Conventional CPU (x86 / RISC-V) | NeuroFlow Architecture |
+| Feature | Conventional CPU (x86 / RISC-V) | NeuroFlow DAE-NPU |
 | :--- | :--- | :--- |
-| **Execution Model** | Von Neumann (Fetch $\to$ Decode $\to$ Reg $\to$ ALU) | **Decoupled Dataflow & Systolic Matrix Engine** |
+| **Execution Model** | Von Neumann (Fetch $\to$ Decode $\to$ Reg $\to$ ALU) | **Decoupled Access-Execute (DAE) & Systolic Array** |
 | **Memory Hierarchy** | Dynamic L1/L2/L3 caches (unpredictable misses) | **Explicit Scratchpad SRAM + Double-Buffered DMA** |
 | **Matrix Operations** | Emulated through nested loops of scalar/SIMD ops | **Hardware Tile Primitive (`TMATMUL`)** |
-| **Branch Handling** | Large speculative branch predictor & OoO logic | **Zero-overhead Hardware Loop Controller** |
+| **Branch Handling** | Large speculative branch predictor & OoO logic | **Zero-Overhead Hardware Loop Controller** |
 | **AI Datatypes** | Prioritizes FP32 / FP64 (FP8/BF16 via extensions) | **Native FP8 (E4M3/E5M2), BF16, INT8, INT4** |
 | **Latency Hiding** | Speculative out-of-order execution | **Asynchronous Decoupled Access-Execute (DAE)** |
 
@@ -75,8 +104,9 @@ NeuroFlow's design principles are grounded in the most successful specialized AI
 ## 5. Development Roadmap
 
 - [ ] **Phase 1: Architecture Specification**
-  - [ ] Formal 32-bit ISA definition (`isa_spec.md`)
-  - [ ] Memory model & scratchpad address mapping (`memory_model.md`)
+  - [x] High-level architectural overview & DAE paradigm (`docs/architecture.md`)
+  - [ ] Formal 32-bit ISA definition (`docs/isa_spec.md`)
+  - [ ] Memory model & scratchpad address mapping (`docs/memory_model.md`)
   - [ ] Systolic array dimensions and tiling scheme
 - [ ] **Phase 2: Cycle-Accurate Software Emulator**
   - [ ] Rust-based core emulator (`emulator/`)
@@ -98,8 +128,9 @@ NeuroFlow's design principles are grounded in the most successful specialized AI
 
 ```text
 neuroflow/
-├── README.md               # Architecture overview and design philosophy
+├── README.md               # Architecture overview, industry comparison, and roadmap
 ├── docs/                   # Formal ISA and microarchitecture specifications
+│   ├── architecture.md     # In-depth DAE-NPU architectural analysis and industry matrix
 │   ├── isa_spec.md         # Instruction Set Architecture manual
 │   └── memory_model.md     # Scratchpad, DMA descriptors, and memory map
 ├── emulator/               # Rust-based cycle-accurate functional emulator
