@@ -150,3 +150,5 @@ All instructions are exactly 32 bits wide, aligned on 4-byte boundaries.
 * **`VSOFTMAX vd, vs`**: Computes numerically stable vector Softmax ($\exp(x_i - \max(x)) / \sum \exp$).
 * **`VADD vd, vs1, vs2`**: Element-wise addition (used for Transformer residual connections: $x + \text{SubLayer}(x)$).
 * **`VMUL vd, vs1, vs2`**: Element-wise vector multiplication.
+* **`VROW.LOAD vd, td, row_idx`**: Loads one 512-bit row (16 FP32 elements) from TCM tile `td` into vector register `vd` in 1 cycle.
+* **`VROW.STORE vs, td, row_idx`**: Stores one 512-bit vector register `vs` into row `row_idx` of TCM tile `td` in 1 cycle.

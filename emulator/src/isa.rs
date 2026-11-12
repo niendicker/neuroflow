@@ -38,11 +38,13 @@ pub const FUNCT3_TZERO: u8    = 0x1;
 pub const FUNCT3_TACC_ROW: u8 = 0x2;
 
 // Vector funct3 codes
-pub const FUNCT3_VGELU: u8    = 0x0;
-pub const FUNCT3_VRMSNORM: u8 = 0x1;
-pub const FUNCT3_VSOFTMAX: u8 = 0x2;
-pub const FUNCT3_VADD: u8     = 0x3;
-pub const FUNCT3_VMUL: u8     = 0x4;
+pub const FUNCT3_VGELU: u8      = 0x0;
+pub const FUNCT3_VRMSNORM: u8   = 0x1;
+pub const FUNCT3_VSOFTMAX: u8   = 0x2;
+pub const FUNCT3_VADD: u8       = 0x3;
+pub const FUNCT3_VMUL: u8       = 0x4;
+pub const FUNCT3_VROW_LOAD: u8  = 0x5;
+pub const FUNCT3_VROW_STORE: u8 = 0x6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DecodedInstruction {
@@ -86,6 +88,8 @@ pub enum DecodedInstruction {
     VSoftmax { vd: usize, vs: usize },
     VAdd { vd: usize, vs1: usize, vs2: usize },
     VMul { vd: usize, vs1: usize, vs2: usize },
+    VRowLoad { vd: usize, td_idx: usize, row_idx: usize },
+    VRowStore { vs: usize, td_idx: usize, row_idx: usize },
 
     // System
     Halt,
@@ -189,6 +193,17 @@ pub fn decode(inst: u32) -> Result<DecodedInstruction, DecodeError> {
                 FUNCT3_VSOFTMAX => Ok(DecodedInstruction::VSoftmax { vd, vs: vs1 }),
                 FUNCT3_VADD => Ok(DecodedInstruction::VAdd { vd, vs1, vs2 }),
                 FUNCT3_VMUL => Ok(DecodedInstruction::VMul { vd, vs1, vs2 }),
+                FUNCT3_VROW_LOAD => {
+                    let td_idx = rs1 & 0x07;
+                    let row_idx = rs2 & 0x0F;
+                    Ok(DecodedInstruction::VRowLoad { vd, td_idx, row_idx })
+                }
+                FUNCT3_VROW_STORE => {
+                    let vs = vd;
+                    let td_idx = rs1 & 0x07;
+                    let row_idx = rs2 & 0x0F;
+                    Ok(DecodedInstruction::VRowStore { vs, td_idx, row_idx })
+                }
                 _ => Err(DecodeError::UnknownFunct3 { opcode, funct3 }),
             }
         }

@@ -140,6 +140,32 @@ impl SystolicEngine {
                     }
                 }
             }
+            DataType::Fp32 => {
+                for i in 0..TILE_DIM {
+                    for j in 0..TILE_DIM {
+                        let mut sum = 0.0f32;
+                        for k in 0..TILE_DIM {
+                            let offset_a = (desc_a.base_addr as usize)
+                                + i * (desc_a.stride as usize)
+                                + k * 4;
+                            let offset_b = (desc_b.base_addr as usize)
+                                + k * (desc_b.stride as usize)
+                                + j * 4;
+
+                            let bytes_a = memory.read_tcm_bytes(desc_a.buffer_id, offset_a, 4)
+                                .map_err(|_| "TCM Out of Bounds reading tile A")?;
+                            let bytes_b = memory.read_tcm_bytes(desc_b.buffer_id, offset_b, 4)
+                                .map_err(|_| "TCM Out of Bounds reading tile B")?;
+
+                            let a_val = f32::from_le_bytes(bytes_a.try_into().unwrap());
+                            let b_val = f32::from_le_bytes(bytes_b.try_into().unwrap());
+
+                            sum += a_val * b_val;
+                        }
+                        acc.fp32_data[i][j] += sum;
+                    }
+                }
+            }
             _ => return Err("Unsupported GEMM data type"),
         }
 

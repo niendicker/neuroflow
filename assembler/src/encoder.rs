@@ -227,6 +227,18 @@ impl Assembler {
                 let vs2 = self.get_vec_reg(inst, 2)?;
                 Ok(OP_VECTOR | (vd << 7) | (0x4 << 12) | (vs1 << 15) | (vs2 << 20))
             }
+            "vrow.load" => {
+                let vd = self.get_vec_reg(inst, 0)?;
+                let td = self.get_td_reg(inst, 1)?;
+                let row_idx = self.get_imm(inst, 2, pc)? as u32 & 0x0F;
+                Ok(OP_VECTOR | (vd << 7) | (0x5 << 12) | (td << 15) | (row_idx << 20))
+            }
+            "vrow.store" => {
+                let vs = self.get_vec_reg(inst, 0)?;
+                let td = self.get_td_reg(inst, 1)?;
+                let row_idx = self.get_imm(inst, 2, pc)? as u32 & 0x0F;
+                Ok(OP_VECTOR | (vs << 7) | (0x6 << 12) | (td << 15) | (row_idx << 20))
+            }
 
             // System
             "halt" => Ok(OP_SYSTEM | (0x1 << 25)),

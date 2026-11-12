@@ -225,6 +225,21 @@ impl Cpu {
             DecodedInstruction::VMul { vd, vs1, vs2 } => {
                 step_cycles = self.vector.vmul(vd, vs1, vs2)?;
             }
+            DecodedInstruction::VRowLoad { vd, td_idx, row_idx } => {
+                let desc = self.tile_descriptors[td_idx];
+                let offset = (desc.base_addr as usize) + row_idx * (desc.stride as usize);
+                let bytes = self.memory.read_tcm_bytes(desc.buffer_id, offset, 64)
+                    .map_err(|_| "TCM Out of Bounds reading vector row")?;
+                self.vector.registers[vd].raw.copy_from_slice(bytes);
+                step_cycles = 1;
+            }
+            DecodedInstruction::VRowStore { vs, td_idx, row_idx } => {
+                let desc = self.tile_descriptors[td_idx];
+                let offset = (desc.base_addr as usize) + row_idx * (desc.stride as usize);
+                self.memory.write_tcm_bytes(desc.buffer_id, offset, &self.vector.registers[vs].raw)
+                    .map_err(|_| "TCM Out of Bounds writing vector row")?;
+                step_cycles = 1;
+            }
 
             // System
             DecodedInstruction::Halt => {

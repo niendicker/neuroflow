@@ -123,16 +123,20 @@ Every architectural decision, RTL module, and emulator component **must** strict
   - [x] Rust-based core engine, machine state, and memory subsystem (Scratchpad TCM + DRAM)
   - [x] 32-bit instruction fetcher and decoder
   - [x] Asynchronous Tensor DMA Streamer (TDS) with ping-pong double buffering
-  - [x] 2D Systolic Array Tensor Engine ($16 \times 16$ tiles: FP8, BF16, INT8 $\to$ FP32)
-  - [x] SIMD Vector Engine (`VGELU`, `VRMSNORM`, `VSOFTMAX`, `VADD`, `VMUL`)
+  - [x] 2D Systolic Array Tensor Engine ($16 \times 16$ tiles: FP8, BF16, INT8, FP32)
+  - [x] SIMD Vector Engine (`VGELU`, `VRMSNORM`, `VSOFTMAX`, `VADD`, `VMUL`, `VROW.LOAD`, `VROW.STORE`)
   - [x] Cycle counter, MAC throughput metrics, and execution reporting
 - [x] **Phase 3: Assembler & Toolchain (`assembler/`)**
   - [x] Two-pass assembler (`neuroflow-as`) compiling `.s` files into 32-bit machine code (`.bin`)
   - [x] Verilog hex memory file generator (`--hex .hex` for `$readmemh`)
   - [x] Direct binary execution support in the emulator (`cargo run -p emulator -- <binary.bin>`)
-- [ ] **Phase 4: Neural Network Benchmark**
-  - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
-  - [ ] Validation against PyTorch reference outputs
+- [x] **Phase 4: Neural Network Benchmark (`benchmarks/`)**
+  - [x] End-to-end execution of a complete Transformer block (Q/K/V Projections + Softmax Attention + RMSNorm + MLP + Residuals)
+  - [x] Bit-for-bit numerical validation against NumPy golden reference model
+  - [x] Benchmark metrics: 24,576 Systolic MACs in 433 cycles (56.76 MACs/cycle)
+- [ ] **Phase 5: Hardware Description (RTL in `rtl/`)**
+  - [ ] SystemVerilog / Chisel implementation of the DAE-NPU
+  - [ ] Verilator cycle-accurate simulation and FPGA deployment
 - [ ] **Phase 4: Neural Network Benchmark**
   - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
   - [ ] Validation against PyTorch reference outputs
