@@ -101,30 +101,44 @@ flowchart TD
 
 ---
 
-## 5. Development Roadmap
+## 5. Core Architectural Tenets (Mandatory Design Criteria)
 
-- [ ] **Phase 1: Architecture Specification**
-  - [x] High-level architectural overview & DAE paradigm (`docs/architecture.md`)
-  - [ ] Formal 32-bit ISA definition (`docs/isa_spec.md`)
-  - [ ] Memory model & scratchpad address mapping (`docs/memory_model.md`)
-  - [ ] Systolic array dimensions and tiling scheme
-- [ ] **Phase 2: Cycle-Accurate Software Emulator**
-  - [ ] Rust-based core emulator (`emulator/`)
-  - [ ] Instruction decoder and execution pipeline
-  - [ ] Systolic matrix engine simulation with tile buffering
-  - [ ] Cycle counter, energy estimation, and throughput metrics
-- [ ] **Phase 3: Assembler & Toolchain**
-  - [ ] Lightweight assembler to compile `.s` assembly files to NeuroFlow machine code
-  - [ ] Disassembler and binary inspector
-- [ ] **Phase 4: Neural Network Benchmark**
-  - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
-- [ ] **Phase 5: Hardware Description (RTL)**
-  - [ ] SystemVerilog / Chisel implementation
-  - [ ] Verilator simulation and FPGA deployment
+Every architectural decision, RTL module, and emulator component **must** strictly adhere to these five tenets:
+
+1. **Tenet I: Physics First (Compute-to-Energy Symmetry):** Data movement consumes up to 100× more energy than math. Partial sums remain stationary inside accumulator tiles; intermediate DRAM roundtrips are strictly forbidden.
+2. **Tenet II: Radical Determinism Over Speculative Hardware:** AI graphs are statically known. Zero silicon budget is spent on branch predictors or out-of-order buffers; execution relies on zero-overhead hardware loops and explicit DMA.
+3. **Tenet III: Strict Decoupling of Access and Execute (DAE):** Memory streaming operates asynchronously from the compute pipelines. Double-buffered scratchpad SRAM completely hides memory latency.
+4. **Tenet IV: Dimensional Alignment (Tile & Vector Symmetry):** A $16 \times 16$ tile row in FP32 equals 512 bits. Vector registers are exactly 512 bits wide, enabling 1-cycle transfers between matrix accumulators and activation units with zero shuffling.
+5. **Tenet V: Anti-Bloat / Lean 32-bit Fixed Encoding:** All instructions are strictly 32-bit fixed width and 4-byte aligned, ensuring simple, high-frequency, low-power decoders.
 
 ---
 
-## 6. Repository Layout
+## 6. Development Roadmap
+
+- [x] **Phase 1: Architecture Specification & DAE Foundations**
+  - [x] High-level architectural overview & DAE paradigm ([docs/architecture.md](docs/architecture.md))
+  - [x] Formal 32-bit ISA definition & register mapping ([docs/isa_spec.md](docs/isa_spec.md))
+  - [x] Core architectural tenets & rationale table
+- [ ] **Phase 2: Cycle-Accurate Software Emulator (`emulator/`)**
+  - [ ] Rust-based core engine, machine state, and memory subsystem (Scratchpad TCM + DRAM)
+  - [ ] 32-bit instruction fetcher and decoder
+  - [ ] Asynchronous Tensor DMA Streamer (TDS) with ping-pong double buffering
+  - [ ] 2D Systolic Array Tensor Engine ($16 \times 16$ tiles: FP8, BF16, INT8 $\to$ FP32)
+  - [ ] SIMD Vector Engine (`VGELU`, `VRMSNORM`, `VSOFTMAX`, `VADD`)
+  - [ ] Cycle counter, energy estimation, and execution reporting
+- [ ] **Phase 3: Assembler & Toolchain (`tools/`)**
+  - [ ] Lightweight assembler compiling `.s` source files to NeuroFlow 32-bit binary code
+  - [ ] Disassembler and machine code inspector
+- [ ] **Phase 4: Neural Network Benchmark**
+  - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
+  - [ ] Validation against PyTorch reference outputs
+- [ ] **Phase 5: Hardware Description (RTL in `rtl/`)**
+  - [ ] SystemVerilog / Chisel implementation of the DAE-NPU
+  - [ ] Verilator cycle-accurate simulation and FPGA deployment
+
+---
+
+## 7. Repository Layout
 
 ```text
 neuroflow/
