@@ -8,6 +8,8 @@ The Decoupled Access-Execute (DAE) paradigm, originally conceptualized in comput
 
 NeuroFlow synthesizes the most effective architectural discoveries of industry leaders—Google TPU, Tenstorrent Tensix, Groq LPU, and NVIDIA TMA—into a coherent, open-source 32-bit ISA with zero microarchitectural baggage.
 
+> **Development Standard:** All technical proposals, hardware modules, and software emulations must comply with the [Five Core Architectural Tenets](isa_spec.md#1-core-architectural-tenets--design-principles) defined in the ISA Specification.
+
 ---
 
 ## 2. Industry Analysis: Why Existing Architectures Are Incomplete
