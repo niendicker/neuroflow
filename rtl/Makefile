@@ -25,6 +25,12 @@ sim_nano: neuroflow_nano.sv neuroflow_core.sv systolic_array.sv pe.sv vector_uni
 	@echo "=== Running NeuroFlow Nano Hardware Simulation ==="
 	./obj_dir/sim_nano
 
+sim_top_axi: neuroflow_top_axi.sv axi_lite_csr.sv sram_scratchpad.sv axis_dma_feeder.sv skew_buffer.sv neuroflow_core.sv systolic_array.sv pe.sv vector_unit.sv tb/tb_top_axi.cpp
+	@echo "=== Compiling NeuroFlow Top AXI SoC Subsystem with Verilator ==="
+	$(VERILATOR) $(VERILATOR_FLAGS) neuroflow_top_axi.sv axi_lite_csr.sv sram_scratchpad.sv axis_dma_feeder.sv skew_buffer.sv neuroflow_core.sv systolic_array.sv pe.sv vector_unit.sv tb/tb_top_axi.cpp -o sim_top_axi
+	@echo "=== Running NeuroFlow Top AXI Hardware Simulation ==="
+	./obj_dir/sim_top_axi
+
 # --- Fluxo 3: Síntese Lógica Open-Source com Yosys ---
 synth_nano: synth_nano.ys neuroflow_nano.sv neuroflow_core.sv systolic_array.sv pe.sv vector_unit.sv
 	@mkdir -p obj_dir
