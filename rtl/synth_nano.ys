@@ -1,0 +1,21 @@
+# NeuroFlow Nano (16 PEs + 128-bit Vector Engine) - Logic Synthesis
+# Elaborates, optimizes, and reports cell count and area for the 4x4 mesh.
+
+read_verilog -sv pe.sv
+read_verilog -sv systolic_array.sv
+read_verilog -sv vector_unit.sv
+read_verilog -sv neuroflow_core.sv
+read_verilog -sv neuroflow_nano.sv
+
+hierarchy -check -top neuroflow_nano
+proc
+opt
+fsm
+opt
+memory
+opt
+synth -top neuroflow_nano
+stat
+
+write_verilog -noattr obj_dir/neuroflow_nano_netlist.v
+write_json obj_dir/neuroflow_nano.json

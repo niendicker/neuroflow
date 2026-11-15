@@ -20,12 +20,12 @@ module systolic_array #(
     input  logic [1:0]             prec,
 
     // External Matrix Inputs (West and North edges)
-    input  logic [DATA_WIDTH-1:0]  act_west_in  [DIM], // 16 activation inputs from TCM
-    input  logic [DATA_WIDTH-1:0]  wgt_north_in [DIM], // 16 weight inputs from TCM
+    input  logic [DIM-1:0][DATA_WIDTH-1:0] act_west_in,
+    input  logic [DIM-1:0][DATA_WIDTH-1:0] wgt_north_in,
 
-    // Matrix Row Extraction (To 512-bit Vector Register File)
-    input  logic [$clog2(DIM)-1:0] read_row_idx,
-    output logic [DATA_WIDTH-1:0]  row_out_512  [DIM]  // 16 x 32-bit = 512 bits
+    // Matrix Row Extraction (To Vector Register File)
+    input  logic [$clog2(DIM)-1:0]         read_row_idx,
+    output logic [DIM-1:0][DATA_WIDTH-1:0] row_out_512
 );
 
     // Interconnect wires between PEs

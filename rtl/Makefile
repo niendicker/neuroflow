@@ -5,7 +5,7 @@ VERILATOR_FLAGS = -Wall -Wno-fatal --cc --exe --build -O3 --trace
 YOSYS = yosys
 DOCKER = docker
 
-all: sim_pe sim_systolic
+all: sim_pe sim_systolic sim_nano
 
 sim_pe: pe.sv tb/tb_pe.cpp
 	@echo "=== Compiling Processing Element (PE) with Verilator ==="
@@ -19,7 +19,18 @@ sim_systolic: systolic_array.sv pe.sv tb/tb_systolic.cpp
 	@echo "=== Running Systolic Array Hardware Simulation ==="
 	./obj_dir/sim_systolic
 
+sim_nano: neuroflow_nano.sv neuroflow_core.sv systolic_array.sv pe.sv vector_unit.sv tb/tb_nano.cpp
+	@echo "=== Compiling NeuroFlow Nano (16 PEs + Vector Engine) with Verilator ==="
+	$(VERILATOR) $(VERILATOR_FLAGS) neuroflow_nano.sv neuroflow_core.sv systolic_array.sv pe.sv vector_unit.sv tb/tb_nano.cpp -o sim_nano
+	@echo "=== Running NeuroFlow Nano Hardware Simulation ==="
+	./obj_dir/sim_nano
+
 # --- Fluxo 3: Síntese Lógica Open-Source com Yosys ---
+synth_nano: synth_nano.ys neuroflow_nano.sv neuroflow_core.sv systolic_array.sv pe.sv vector_unit.sv
+	@mkdir -p obj_dir
+	@echo "=== Running Yosys Generic Logic Synthesis for NeuroFlow Nano (16 PEs) ==="
+	$(YOSYS) -s synth_nano.ys
+
 synth_pe: synth_pe.ys pe.sv
 	@mkdir -p obj_dir
 	@echo "=== Running Yosys Generic Logic Synthesis for PE ==="
