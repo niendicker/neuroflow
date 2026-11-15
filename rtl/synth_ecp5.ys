@@ -1,0 +1,5 @@
+# NeuroFlow PE - Synthesis targeting Lattice ECP5 FPGA
+read_verilog -sv pe.sv
+hierarchy -check -top pe
+synth_ecp5 -top pe -json obj_dir/pe_ecp5.json
+stat

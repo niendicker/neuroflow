@@ -1,0 +1,28 @@
+# NeuroFlow Processing Element (PE) - Generic Logic Synthesis with Yosys
+# Elaborates, optimizes, and maps pe.sv to standard gates and reports area/statistics.
+
+# Read SystemVerilog RTL
+read_verilog -sv pe.sv
+
+# Elaborate hierarchy
+hierarchy -check -top pe
+
+# High-level synthesis optimizations
+proc
+opt
+fsm
+opt
+memory
+opt
+
+# Generic logic synthesis mapping
+synth -top pe
+
+# Print design statistics (registers, operators, cell count)
+stat
+
+# Export synthesized gate-level Verilog
+write_verilog -noattr obj_dir/pe_synth_netlist.v
+
+# Export JSON representation (compatible with netlistsvg schematic viewer)
+write_json obj_dir/pe_synth.json

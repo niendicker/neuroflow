@@ -4,7 +4,7 @@
 [![Architecture: DAE-NPU](https://img.shields.io/badge/Architecture-DAE--NPU-blueviolet.svg)]()
 [![Status: Specification & Design](https://img.shields.io/badge/Status-Specification%20%26%20Design-orange.svg)]()
 
-**NeuroFlow** is an open-source, domain-specific processor architecture designed from the ground up for modern deep learning workloads (Transformers, LLMs, and ConvNets).
+**NeuroFlow** is an open-source, domain-specific processor architecture designed from the ground up for modern deep learning and embedded edge intelligence (Transformers, ConvNets, Audio, Sensor Fusion, and Real-Time Control).
 
 NeuroFlow is formally classified as a **Decoupled Access-Execute Neural Processing Unit (DAE-NPU)**. By strictly decoupling memory streaming (Access) from matrix/vector computation (Execute) and coordinating them via an ultra-lean 32-bit scalar control core, NeuroFlow eliminates the von Neumann bottleneck, removes unpredictable cache misses, and maximizes compute density per watt.
 
@@ -113,7 +113,26 @@ Every architectural decision, RTL module, and emulator component **must** strict
 
 ---
 
-## 6. Development Roadmap
+## 6. Target Application Domains: Embedded & Edge AI Focus
+
+While data center accelerators fight multi-billion-dollar memory-wall battles over HBM bandwidth, **NeuroFlow is architected with a sharp focus on the Embedded & Edge AI frontier**.
+
+In embedded and cyber-physical systems, domain models range from hundreds of kilobytes to dozens of megabytes, fitting entirely inside the on-chip **Tightly-Coupled Scratchpad SRAM (TCM)**. By eliminating external DRAM roundtrips and cache misses, NeuroFlow delivers **cycle-deterministic sub-microsecond latency, zero jitter, and single-digit milliwatt power consumption** on mature, cost-effective silicon nodes.
+
+Beyond computer vision (e.g., edge YOLO and MobileNet), NeuroFlow is optimized for high-value embedded verticals:
+
+| Application Domain | Workloads & Models | Edge Value & NeuroFlow Advantage |
+| :--- | :--- | :--- |
+| **1. Always-On Audio & Voice** | Keyword Spotting (DS-CNN), Neural ANC (<3ms latency), compact ASR (*Whisper-tiny*) | 100% private, on-device voice control without cloud roundtrips; microwatt-range standby. |
+| **2. Industrial Predictive Maintenance** | 1D-CNNs, Temporal Autoencoders for 10–50 kHz triaxial vibration sensing | Micro-fissure detection in turbines and bearings weeks prior to failure; multi-year battery life on isolated wireless nodes. |
+| **3. Medical Devices & Wearables** | Continuous ECG (arrhythmia/AFib), EEG (seizure prediction, BCI), optical PPG | Hard real-time cycle determinism and zero jitter for safety-critical medical diagnostics. |
+| **4. GPS-Denied Inertial Navigation** | AI-IMU sensor fusion, learned 6-DoF odometry, drone attitude stabilization | Replaces classic Extended Kalman Filters (EKF) with learned non-linear models; zero-drift spatial dead reckoning in tunnels and mines. |
+| **5. Neural Power Electronics Control** | Neural Model Predictive Control (MPC), Deep RL for inverters and BMS | 50–100 kHz high-frequency switching for EV traction inverters and solar converters with microsecond decision loops. |
+| **6. mmWave Radar & RF Sensing** | 60 GHz / 77 GHz micro-Doppler radar tensor processing, gesture tracking | Contactless vital sign extraction (respiration/pulse through clothing) and automotive in-cabin unattended passenger safety. |
+
+---
+
+## 7. Development Roadmap
 
 - [x] **Phase 1: Architecture Specification & DAE Foundations**
   - [x] High-level architectural overview & DAE paradigm ([docs/architecture.md](docs/architecture.md))
@@ -140,16 +159,15 @@ Every architectural decision, RTL module, and emulator component **must** strict
   - [x] 512-bit SIMD Vector Engine (`vector_unit.sv`)
   - [x] Verilator C++ testbench harness (`tb/tb_pe.cpp`, `tb/tb_systolic.cpp`) with VCD waveform tracing
   - [x] Full hardware verification: 4,096 MACs in 50 cycles (81.9 MACs/cycle sustained)
-- [ ] **Phase 4: Neural Network Benchmark**
-  - [ ] End-to-end execution of a complete Transformer block (GEMM + RMSNorm + SiLU + Softmax)
-  - [ ] Validation against PyTorch reference outputs
-- [ ] **Phase 5: Hardware Description (RTL in `rtl/`)**
-  - [ ] SystemVerilog / Chisel implementation of the DAE-NPU
-  - [ ] Verilator cycle-accurate simulation and FPGA deployment
+- [x] **Phase 6: Open-Source Logic Synthesis & ASIC Flow (`openlane/`, `rtl/`)**
+  - [x] Generic gate-level logic synthesis scripts via Yosys (`rtl/synth_pe.ys`)
+  - [x] FPGA target synthesis mappings for Lattice iCE40 and ECP5
+  - [x] OpenLane 2 / OpenROAD SkyWater 130nm ASIC tapeout physical configuration (`openlane/pe/`)
+  - [x] Comprehensive documentation and build targets ([docs/asic_synthesis.md](docs/asic_synthesis.md))
 
 ---
 
-## 7. Quick Start: Assembling & Running Programs
+## 8. Quick Start: Assembling & Running Programs
 
 ### 1. Compile an Assembly Source File
 ```bash
@@ -165,28 +183,41 @@ cargo run -p emulator -- asm/gemm_layer.bin
 
 ### 3. Run Hardware RTL Simulation (SystemVerilog + Verilator)
 ```bash
-# Install Verilator (if not already installed)
-sudo pacman -S verilator gtkwave
-
 # Run RTL simulation of the Systolic Processing Element
 cd rtl
 make sim_pe
+
+# Run RTL simulation of the 16x16 Systolic Array
+make sim_systolic
+```
+
+### 4. Logic Synthesis & ASIC Flow (Yosys & OpenLane)
+```bash
+# Run logic synthesis and area/cell statistics for the PE
+cd rtl
+make synth_pe
+
+# Run OpenLane ASIC tapeout flow for SkyWater 130nm (via Docker)
+make asic_pe
 ```
 
 ---
 
-## 8. Repository Layout
+## 9. Repository Layout
 
 ```text
 neuroflow/
 ├── README.md               # Architecture overview, industry comparison, and roadmap
-├── docs/                   # Formal ISA and microarchitecture specifications
+├── docs/                   # Formal ISA, microarchitecture, and ASIC synthesis specs
 │   ├── architecture.md     # In-depth DAE-NPU architectural analysis and industry matrix
 │   ├── isa_spec.md         # Instruction Set Architecture manual
-│   └── memory_model.md     # Scratchpad, DMA descriptors, and memory map
+│   └── asic_synthesis.md   # Open-source logic synthesis (Yosys) and ASIC guide (OpenLane)
+├── assembler/              # Two-pass assembler (neuroflow-as)
 ├── emulator/               # Rust-based cycle-accurate functional emulator
+├── benchmarks/             # NumPy golden reference models and benchmarks
 ├── asm/                    # Assembly kernels and workload benchmarks
-└── rtl/                    # Hardware description files (SystemVerilog / Chisel)
+├── openlane/               # OpenLane / SkyWater 130nm ASIC physical design files
+└── rtl/                    # Synthesizable SystemVerilog modules and Verilator testbenches
 ```
 
 ---

@@ -4,3 +4,8 @@ obj_dir/
 **/*.rs.bk
 *.swp
 .DS_Store
+.venv/
+runs/
+abc.history
+*.history
+

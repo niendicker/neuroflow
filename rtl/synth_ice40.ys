@@ -1,0 +1,5 @@
+# NeuroFlow PE - Synthesis targeting Lattice iCE40 FPGA
+read_verilog -sv pe.sv
+hierarchy -check -top pe
+synth_ice40 -top pe -json obj_dir/pe_ice40.json
+stat
