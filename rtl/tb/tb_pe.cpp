@@ -1,4 +1,6 @@
 // Verilator C++ Testbench for NeuroFlow Processing Element (PE)
+// Tests 2-Stage Pipelined MAC: Multiplier Stage -> Accumulator Stage
+
 #include <iostream>
 #include <memory>
 #include <cassert>
@@ -11,7 +13,7 @@ int main(int argc, char** argv) {
 
     std::cout << "============================================================" << std::endl;
     std::cout << "     NeuroFlow RTL Hardware Simulation (Verilator)          " << std::endl;
-    std::cout << "     Testing Module: pe.sv (Processing Element)             " << std::endl;
+    std::cout << "     Testing Module: pe.sv (2-Stage Pipelined MAC)          " << std::endl;
     std::cout << "============================================================" << std::endl;
 
     // Initialize reset
@@ -44,12 +46,18 @@ int main(int argc, char** argv) {
                   << " | Acc_out: " << top->acc_out << std::endl;
     }
 
-    // After 5 cycles of 4 * 5 = 20, Acc_out should equal 100
+    // 1-Cycle Pipeline Drain: Disable inputs and pulse clock to accumulate the 5th product
+    top->en = 0;
+    top->clk = 1; top->eval();
+    top->clk = 0; top->eval();
+    std::cout << "Cycle 6 (Pipeline Drain) | Acc_out: " << top->acc_out << std::endl;
+
+    // After 5 inputs of 4 * 5 = 20, Acc_out should equal 100
     uint32_t expected = 5 * (4 * 5);
     std::cout << "\nExpected Acc_out: " << expected << " | Got: " << top->acc_out << std::endl;
 
     if (top->acc_out == expected) {
-        std::cout << "\n[PASSED] Processing Element (PE) RTL hardware verified successfully!" << std::endl;
+        std::cout << "\n[PASSED] 2-Stage Pipelined PE RTL hardware verified successfully!" << std::endl;
         return 0;
     } else {
         std::cerr << "\n[FAILED] Mismatch in PE accumulator readout!" << std::endl;
