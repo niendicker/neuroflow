@@ -121,3 +121,25 @@ NeuroFlow solves this by implementing **four decoupled, cooperating microarchite
 * **Zero-Overhead Hardware Loops (ZOHL):**
   * Hardware loop counter (`lc`), start address (`ls`), and end address (`le`).
   * Eliminates traditional branch penalties, label recalculations, and branch predictor tables.
+
+---
+
+## 4. Scalable Microarchitecture Tiers: The NeuroFlow Family
+
+Because the compute fabric (`rtl/systolic_array.sv`) is parameterized via `DIM`, the DAE-NPU scales smoothly from micro-power sensory hubs up to real-time vision accelerators without modifying the instruction decoder or the software toolchain:
+
+### Specification Matrix
+
+| Metric | NeuroFlow Nano | NeuroFlow Edge (Baseline) | NeuroFlow Pro |
+| :--- | :--- | :--- | :--- |
+| **Systolic Mesh Dimensions** | $4 \times 4$ or $8 \times 8$ | **$16 \times 16$** | **$32 \times 32$** (or $4 \times 16 \times 16$) |
+| **Active MAC Cores** | 16 to 64 PEs | 256 PEs | 1,024 PEs |
+| **Operations / Cycle** | 32 to 128 OPs/cycle | 512 OPs/cycle | 2,048 OPs/cycle |
+| **Peak Throughput @ 100 MHz** | 3.2 to 12.8 GOPS | 51.2 GOPS | 204.8 GOPS (~0.2 TOPS) |
+| **Peak Throughput @ 250 MHz** | 8.0 to 32.0 GOPS | 128.0 GOPS | 512.0 GOPS (~0.5 TOPS) |
+| **Target Power Budget** | < 15 mW | ~150 – 350 mW | ~1.0 – 2.0 W |
+| **On-Chip SRAM (TCM)** | 64 KB – 128 KB | 512 KB – 1 MB | 2 MB – 4 MB |
+| **External Memory Interface** | None / QSPI Flash | QSPI / OSPI / HyperBus | LPDDR4 / QSPI-PSRAM |
+| **Silicon Area (SkyWater 130nm)**| ~0.5 – 2.0 mm² | ~8.0 – 10.0 mm² | Multi-tile / advanced node target |
+| **Primary Workloads** | Always-On KWS, ANC, ECG | IMU Fusion, Drone/Robotics, Inverters, Radar | 60 FPS Vision (YOLO), 3D SLAM, Micro-LLMs (1B) |
+

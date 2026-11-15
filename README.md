@@ -130,6 +130,16 @@ Beyond computer vision (e.g., edge YOLO and MobileNet), NeuroFlow is optimized f
 | **5. Neural Power Electronics Control** | Neural Model Predictive Control (MPC), Deep RL for inverters and BMS | 50–100 kHz high-frequency switching for EV traction inverters and solar converters with microsecond decision loops. |
 | **6. mmWave Radar & RF Sensing** | 60 GHz / 77 GHz micro-Doppler radar tensor processing, gesture tracking | Contactless vital sign extraction (respiration/pulse through clothing) and automotive in-cabin unattended passenger safety. |
 
+### Product Tiers: The Scalable NeuroFlow Family
+
+Because the 2D Systolic Array RTL ([rtl/systolic_array.sv](rtl/systolic_array.sv)) is written as a fully parameterized hardware generator (`parameter DIM`), the architecture scales seamlessly across three specialized deployment tiers:
+
+| Tier | Mesh Topology | MAC Cores | Peak Throughput (100MHz / 250MHz) | Power Budget | On-Chip SRAM (TCM) | Primary Target Workloads |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **NeuroFlow Nano** | $4 \times 4$ or $8 \times 8$ | **16 to 64 PEs** | 1.6 – 12.8 GOPS | **< 15 mW** | 64 KB – 128 KB | Medical wearables, continuous ECG, Always-On voice (KWS/ANC), 10-year battery vibration sensors. |
+| **NeuroFlow Edge** *(Baseline)* | $16 \times 16$ | **256 PEs** | 51.2 – 128 GOPS | **~150 – 350 mW** | 512 KB – 1 MB | Robotics/drone IMU fusion, 100 kHz EV inverter MPC, mmWave vital sign radar, speech-to-intent. |
+| **NeuroFlow Pro** | $32 \times 32$ | **1,024 PEs** | 204.8 – 512 GOPS | **~1.0 – 2.0 W** | 2 MB – 4 MB (+ Ext PSRAM/LPDDR) | Real-time 60 FPS vision (YOLO), industrial inspection, 3D SLAM navigation, on-device micro-LLMs (1B). |
+
 ---
 
 ## 7. Development Roadmap
