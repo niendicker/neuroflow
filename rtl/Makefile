@@ -53,5 +53,9 @@ asic_pe:
 	@echo "=== Running OpenLane 2 ASIC Tapeout Flow for PE (Sky130) ==="
 	$(OPENLANE) --dockerized ../openlane/pe/config.json
 
+asic_nano:
+	@echo "=== Running OpenLane 2 ASIC Tapeout Flow for NeuroFlow Nano (Sky130) ==="
+	$(OPENLANE) --dockerized ../openlane/nano/config.json
+
 clean:
 	rm -rf obj_dir *.vcd
